@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AMU ID Card Scanner</string>
+
+    <string name="status_point_camera">Point the camera at the QR code on the ID card</string>
+    <string name="status_camera_permission_needed">Camera permission is required to scan ID cards</string>
+    <string name="status_camera_error">Unable to start camera</string>
+    <string name="status_verified">Genuine AMU link detected — opening verification…</string>
+
+    <string name="verify_title">Verification</string>
+    <string name="verify_source_prefix">Verified source: </string>
+    <string name="verify_blocked_navigation">Blocked an attempt to leave the official AMU verification page</string>
+    <string name="verify_loading">Loading verification page…</string>
+    <string name="verify_scan_another">Scan another card</string>
+</resources>

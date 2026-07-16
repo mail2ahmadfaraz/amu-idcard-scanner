@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="amu_blue">#003366</color>
+    <color name="amu_blue_dark">#001F3F</color>
+    <color name="ic_launcher_background">#003366</color>
+    <color name="status_ok">#1E7D32</color>
+    <color name="status_error">#C62828</color>
+    <color name="scrim">#B3000000</color>
+</resources>
