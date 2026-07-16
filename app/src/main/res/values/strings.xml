@@ -12,4 +12,8 @@
     <string name="verify_blocked_navigation">Blocked an attempt to leave the official AMU verification page</string>
     <string name="verify_loading">Loading verification page…</string>
     <string name="verify_scan_another">Scan another card</string>
+
+    <string name="no_internet_title">No internet connection</string>
+    <string name="no_internet_message">Please turn on Wi-Fi or mobile data to load the verification page. This will retry automatically once you\'re back online.</string>
+    <string name="no_internet_retry">Retry now</string>
 </resources>

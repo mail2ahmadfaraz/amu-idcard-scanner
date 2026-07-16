@@ -1,7 +1,16 @@
 package `in`.ac.amuonline.idverifier
 
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Bundle
 import android.view.View
+import android.view.animation.LinearInterpolator
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -24,11 +33,28 @@ class VerifyResultActivity : AppCompatActivity() {
     }
 
     private lateinit var binding: ActivityVerifyBinding
+    private lateinit var connectivityManager: ConnectivityManager
+    private var verifyUrl: String? = null
+    private var pulseAnimator: ValueAnimator? = null
+
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            runOnUiThread {
+                if (binding.noInternetOverlay.visibility == View.VISIBLE) {
+                    loadVerificationPage()
+                }
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityVerifyBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        // Registered unconditionally (even if we finish() below) so onDestroy's
+        // unregisterNetworkCallback always has a matching registration.
+        connectivityManager.registerNetworkCallback(NetworkRequest.Builder().build(), networkCallback)
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -55,13 +81,53 @@ class VerifyResultActivity : AppCompatActivity() {
             return
         }
 
+        verifyUrl = validated.url
         binding.sourceLabel.text = getString(R.string.verify_source_prefix) + (sourceLabel ?: "")
 
         binding.toolbar.setNavigationOnClickListener { finish() }
         binding.scanAnotherButton.setOnClickListener { finish() }
+        binding.retryButton.setOnClickListener { loadVerificationPage() }
 
         setupWebView()
-        binding.webView.loadUrl(validated.url)
+        loadVerificationPage()
+    }
+
+    private fun isOnline(): Boolean {
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    private fun loadVerificationPage() {
+        val url = verifyUrl ?: return
+        if (!isOnline()) {
+            showNoInternet()
+            return
+        }
+        hideNoInternet()
+        binding.webView.loadUrl(url)
+    }
+
+    private fun showNoInternet() {
+        binding.webView.visibility = View.GONE
+        binding.progressBar.visibility = View.GONE
+        binding.noInternetOverlay.visibility = View.VISIBLE
+        if (pulseAnimator == null) {
+            pulseAnimator = ObjectAnimator.ofFloat(binding.wifiOffIcon, View.ALPHA, 1f, 0.35f, 1f).apply {
+                duration = 1400
+                repeatCount = ValueAnimator.INFINITE
+                interpolator = LinearInterpolator()
+                start()
+            }
+        }
+    }
+
+    private fun hideNoInternet() {
+        binding.noInternetOverlay.visibility = View.GONE
+        binding.webView.visibility = View.VISIBLE
+        pulseAnimator?.cancel()
+        pulseAnimator = null
+        binding.wifiOffIcon.alpha = 1f
     }
 
     private fun setupWebView() {
@@ -92,6 +158,18 @@ class VerifyResultActivity : AppCompatActivity() {
                 return false // allow WebView to load it normally
             }
 
+            override fun onReceivedError(
+                view: WebView,
+                request: WebResourceRequest,
+                error: WebResourceError
+            ) {
+                // Swap in our own animated screen instead of leaving WebView's raw
+                // "this page isn't available" error rendered underneath.
+                if (request.isForMainFrame) {
+                    showNoInternet()
+                }
+            }
+
             override fun onPageStarted(view: WebView, url: String, favicon: android.graphics.Bitmap?) {
                 binding.progressBar.visibility = View.VISIBLE
             }
@@ -111,6 +189,8 @@ class VerifyResultActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        pulseAnimator?.cancel()
+        connectivityManager.unregisterNetworkCallback(networkCallback)
         binding.webView.destroy()
         super.onDestroy()
     }
