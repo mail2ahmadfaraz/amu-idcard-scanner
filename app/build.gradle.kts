@@ -29,6 +29,9 @@ android {
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
+            // Modern JDK keytool defaults to PKCS12, not the legacy JKS format
+            // Gradle otherwise assumes — must be explicit or signing fails to load it.
+            storeType = "PKCS12"
         }
     }
 
