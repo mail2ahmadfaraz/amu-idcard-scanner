@@ -163,9 +163,15 @@ class VerifyResultActivity : AppCompatActivity() {
                 request: WebResourceRequest,
                 error: WebResourceError
             ) {
-                // Swap in our own animated screen instead of leaving WebView's raw
-                // "this page isn't available" error rendered underneath.
-                if (request.isForMainFrame) {
+                // Only hijack the screen for errors that actually mean "no
+                // connectivity" — anything else (odd redirects, a transient SSL/DNS
+                // blip that resolves on the actual navigation, HTTP status errors,
+                // etc.) must NOT blank out real content that did load.
+                val isConnectivityError = error.errorCode == ERROR_HOST_LOOKUP ||
+                    error.errorCode == ERROR_CONNECT ||
+                    error.errorCode == ERROR_TIMEOUT ||
+                    error.errorCode == ERROR_IO
+                if (request.isForMainFrame && isConnectivityError) {
                     showNoInternet()
                 }
             }
