@@ -5,7 +5,8 @@
     <string name="status_point_camera">Point the camera at the QR code on the ID card</string>
     <string name="status_camera_permission_needed">Camera permission is required to scan ID cards</string>
     <string name="status_camera_error">Unable to start camera</string>
-    <string name="status_verified">Genuine AMU link detected — opening verification…</string>
+    <string name="result_valid_label">Verified</string>
+    <string name="result_invalid_label">Not a genuine AMU card</string>
 
     <string name="verify_title">Verification</string>
     <string name="verify_source_prefix">Verified source: </string>

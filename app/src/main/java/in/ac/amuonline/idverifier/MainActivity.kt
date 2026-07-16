@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Size
+import android.view.View
+import android.view.animation.OvershootInterpolator
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
@@ -25,6 +27,11 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        private const val VALID_RESULT_DISPLAY_MS = 700L
+        private const val INVALID_RESULT_DISPLAY_MS = 1600L
+    }
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var cameraExecutor: ExecutorService
@@ -61,6 +68,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         // Resume scanning when returning from the verification screen.
+        hideResultOverlay()
         scanningPaused.set(false)
         setStatus(getString(R.string.status_point_camera), isError = false)
     }
@@ -150,22 +158,53 @@ class MainActivity : AppCompatActivity() {
         when (val result = QrUrlValidator.validate(rawText)) {
             is QrValidationResult.Valid -> {
                 runOnUiThread {
-                    setStatus(getString(R.string.status_verified), isError = false)
-                    val intent = Intent(this, VerifyResultActivity::class.java).apply {
-                        putExtra(VerifyResultActivity.EXTRA_URL, result.url)
-                        putExtra(VerifyResultActivity.EXTRA_SOURCE_LABEL, result.sourceLabel)
-                    }
-                    startActivity(intent)
+                    showResultOverlay(isValid = true, message = getString(R.string.result_valid_label))
+                    binding.root.postDelayed({
+                        val intent = Intent(this, VerifyResultActivity::class.java).apply {
+                            putExtra(VerifyResultActivity.EXTRA_URL, result.url)
+                            putExtra(VerifyResultActivity.EXTRA_SOURCE_LABEL, result.sourceLabel)
+                        }
+                        startActivity(intent)
+                    }, VALID_RESULT_DISPLAY_MS)
                 }
             }
             is QrValidationResult.Invalid -> {
                 runOnUiThread {
-                    setStatus(result.reason, isError = true)
+                    showResultOverlay(isValid = false, message = result.reason)
                 }
                 // Let the user see the rejection, then resume scanning automatically.
-                binding.root.postDelayed({ scanningPaused.set(false) }, 2000)
+                binding.root.postDelayed({
+                    hideResultOverlay()
+                    scanningPaused.set(false)
+                }, INVALID_RESULT_DISPLAY_MS)
             }
         }
+    }
+
+    private fun showResultOverlay(isValid: Boolean, message: String) {
+        binding.resultIcon.setImageResource(if (isValid) R.drawable.ic_check else R.drawable.ic_x_mark)
+        binding.resultLabel.text = message
+        binding.resultOverlay.setBackgroundColor(
+            ContextCompat.getColor(this, if (isValid) R.color.status_ok else R.color.status_error)
+        )
+
+        binding.resultOverlay.alpha = 0f
+        binding.resultOverlay.visibility = View.VISIBLE
+        binding.resultOverlay.animate().alpha(1f).setDuration(150).start()
+
+        binding.resultIcon.scaleX = 0.3f
+        binding.resultIcon.scaleY = 0.3f
+        binding.resultIcon.animate()
+            .scaleX(1f).scaleY(1f)
+            .setDuration(350)
+            .setInterpolator(OvershootInterpolator())
+            .start()
+    }
+
+    private fun hideResultOverlay() {
+        binding.resultOverlay.visibility = View.GONE
+        binding.resultIcon.animate().cancel()
+        binding.resultOverlay.animate().cancel()
     }
 
     private fun setStatus(text: String, isError: Boolean) {
