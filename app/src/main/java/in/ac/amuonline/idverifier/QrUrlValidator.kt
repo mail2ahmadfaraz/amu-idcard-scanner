@@ -47,10 +47,7 @@ object QrUrlValidator {
             return QrValidationResult.Invalid("Malformed link")
         }
 
-        val path = uri.path ?: ""
-        val match = AllowedSources.ALL.firstOrNull { source ->
-            host == source.host && path.startsWith(source.requiredPathPrefix)
-        }
+        val match = AllowedSources.ALL.firstOrNull { source -> host == source.host }
 
         return if (match != null) {
             QrValidationResult.Valid(trimmed, match.label)

@@ -14,7 +14,8 @@ doesn't point to a genuine AMU verification link.
    - the URL has no embedded credentials (`user@host` tricks)
    - the **host** exactly equals one of the allow-listed hosts in
      [`AllowedSources`](app/src/main/java/in/ac/amuonline/idverifier/AllowedSources.kt)
-   - the path starts with that source's expected prefix
+     (the path is not restricted — the host is the actual trust boundary, and
+     path patterns turned out to vary/drift in practice)
 3. Only if all of that passes does the app open
    [`VerifyResultActivity`](app/src/main/java/in/ac/amuonline/idverifier/VerifyResultActivity.kt),
    which loads the URL in a WebView. The WebView re-validates the URL again on
@@ -29,10 +30,10 @@ Currently allow-listed, based on how this repo's Laravel app generates ID-card
 QR codes ([app/Console/Commands/GenerateIdCardAssets.php](../application/app/Console/Commands/GenerateIdCardAssets.php),
 [app/Jobs/GenerateIdCardZipJob.php](../application/app/Jobs/GenerateIdCardZipJob.php)):
 
-| Host | Required path prefix | Source |
-|---|---|---|
-| `moeps.amucoe.ac.in` | `/generate/verifiable/qr-code/` | external MOEPS verifiable-link service |
-| `nep.amuonline.ac.in` | `/admin/idcards/verify/` | this app's own fallback verify route |
+| Host | Source |
+|---|---|
+| `moeps.amucoe.ac.in` | external MOEPS verifiable-link service (e.g. `/qr-code/verify/{uuid}`) |
+| `nep.amuonline.ac.in` | this app's own fallback verify route (e.g. `/admin/idcards/verify/{id}`) |
 
 If the ID-card generator ever starts issuing links from a new host, add it to
 `AllowedSources.ALL` — that's the only place the trust boundary lives.
