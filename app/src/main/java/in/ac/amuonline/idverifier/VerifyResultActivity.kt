@@ -1,6 +1,5 @@
 package `in`.ac.amuonline.idverifier
 
-import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.webkit.WebResourceRequest
@@ -25,7 +24,6 @@ class VerifyResultActivity : AppCompatActivity() {
     }
 
     private lateinit var binding: ActivityVerifyBinding
-    private var allowedHost: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,7 +55,6 @@ class VerifyResultActivity : AppCompatActivity() {
             return
         }
 
-        allowedHost = Uri.parse(validated.url).host?.lowercase()
         binding.sourceLabel.text = getString(R.string.verify_source_prefix) + (sourceLabel ?: "")
 
         binding.toolbar.setNavigationOnClickListener { finish() }
@@ -83,7 +80,7 @@ class VerifyResultActivity : AppCompatActivity() {
             ): Boolean {
                 val host = request.url.host?.lowercase()
                 val scheme = request.url.scheme?.lowercase()
-                val onAllowedHost = scheme == "https" && host != null && host == allowedHost
+                val onAllowedHost = scheme == "https" && host != null && AllowedSources.match(host) != null
                 if (!onAllowedHost) {
                     Toast.makeText(
                         this@VerifyResultActivity,
