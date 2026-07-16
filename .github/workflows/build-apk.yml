@@ -24,6 +24,25 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
+      # Every build must be signed with the SAME debug key, or installing a newer
+      # build over an older one on a device fails with INSTALL_FAILED_UPDATE_INCOMPATIBLE.
+      # Generate it once and commit it back so all future runs reuse the same file.
+      - name: Ensure fixed debug keystore exists
+        run: |
+          if [ ! -f app/debug.keystore ]; then
+            keytool -genkeypair -v \
+              -keystore app/debug.keystore \
+              -storepass android -keypass android \
+              -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=AMU ID Card Scanner Debug,O=AMU,C=IN"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add app/debug.keystore
+            git commit -m "Add fixed debug keystore for consistent CI signing [skip ci]"
+            git push
+          fi
+
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 

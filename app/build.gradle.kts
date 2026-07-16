@@ -18,7 +18,24 @@ android {
         versionName = "1.0"
     }
 
+    // Fixed debug-signing key (committed at app/debug.keystore) so every CI build has
+    // the SAME signature — otherwise each GitHub Actions run gets a fresh throwaway
+    // debug key and installing a newer build over an older one fails with
+    // INSTALL_FAILED_UPDATE_INCOMPATIBLE. Not a secret: this only ever signs debug
+    // builds, never a Play Store release.
+    signingConfigs {
+        create("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
