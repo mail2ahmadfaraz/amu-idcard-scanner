@@ -23,8 +23,11 @@ android {
     // debug key and installing a newer build over an older one fails with
     // INSTALL_FAILED_UPDATE_INCOMPATIBLE. Not a secret: this only ever signs debug
     // builds, never a Play Store release.
+    // AGP already registers a default "debug" SigningConfig — reconfigure it in place
+    // (rather than signingConfigs.create("debug"), which collides with that default)
+    // to point at our fixed, committed keystore instead of a throwaway per-machine one.
     signingConfigs {
-        create("debug") {
+        getByName("debug") {
             storeFile = file("debug.keystore")
             storePassword = "android"
             keyAlias = "androiddebugkey"
@@ -36,9 +39,6 @@ android {
     }
 
     buildTypes {
-        debug {
-            signingConfig = signingConfigs.getByName("debug")
-        }
         release {
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
